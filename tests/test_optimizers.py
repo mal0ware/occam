@@ -288,7 +288,11 @@ def test_bl_one_asset_is_precision_weighted_average() -> None:
     s2, tau, pi, q, om = 0.04, 0.5, 0.01, 0.03, 0.01
     expected = (pi / (tau * s2) + q / om) / (1 / (tau * s2) + 1 / om)
     got = opt.black_litterman_mean(
-        np.array([[s2]]), np.array([pi]), tau=tau, P=np.eye(1), Q=np.array([q]),
+        np.array([[s2]]),
+        np.array([pi]),
+        tau=tau,
+        P=np.eye(1),
+        Q=np.array([q]),
         omega=np.array([[om]]),
     )
     assert np.isclose(got[0], expected)

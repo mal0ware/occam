@@ -6,16 +6,16 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "numpy",
-    "scipy",
-    "matplotlib",
+    "numpy==2.5.5",
+    "scipy==1.18.1",
+    "matplotlib==3.11.2",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest",
-    "ruff",
-    "mypy",
+    "pytest==9.2.0",
+    "ruff==0.17.6",
+    "mypy==2.4.1",
 ]
 
 [build-system]

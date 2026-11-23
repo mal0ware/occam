@@ -1,0 +1,28 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run ruff check
+      - run: uv run mypy src
+      # The data step may fail if the French library is unreachable; tests that need the
+      # files skip themselves, and the smoke run is skipped with them.
+      - name: fetch data
+        id: fetch
+        continue-on-error: true
+        run: uv run python scripts/fetch_data.py
+      - run: uv run pytest
+      - name: smoke run of reproduce
+        if: steps.fetch.outcome == 'success'
+        run: uv run python scripts/reproduce.py --fast
