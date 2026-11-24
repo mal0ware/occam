@@ -43,28 +43,28 @@ def sharpe_figure(
 ) -> None:
     """Sharpe ratio of each rule minus that of equal weight, one panel per dataset.
 
-    Bars to the right of zero beat 1/N. A solid bar is significant at the 5% level
-    (one-sided); a pale bar is not.
+    Bars to the right of zero beat 1/N. A solid bar is significant at the 5% level in the
+    two-sided Ledoit-Wolf bootstrap test; a pale bar is not.
     """
     rules = [r for r in bt.RULES if r not in ("ew", "bl")]
     table = {(c.sample, c.dataset, c.rule): c for c in cells}
-    keys = [k for k in datasets if (samples[0].key, k, "ew") in table]
+    keys = [k for k in datasets if (samples[0].tag, k, "ew") in table]
     fig, axes = plt.subplots(1, len(keys), figsize=(11, 3.9), sharey=True, facecolor=SURFACE)
     axes = [axes] if len(keys) == 1 else list(axes)
     height = 0.8 / len(samples)
     for ax, key in zip(axes, keys, strict=True):
         _style(ax)
         for s, sample in enumerate(samples):
-            base = table[(sample.key, key, "ew")].sharpe
+            base = table[(sample.tag, key, "ew")].sharpe
             for i, rule in enumerate(rules):
-                cell = table[(sample.key, key, rule)]
+                cell = table[(sample.tag, key, rule)]
                 y = i + (s - (len(samples) - 1) / 2) * height
                 ax.barh(
                     y,
                     cell.sharpe - base,
                     height=height * 0.88,
                     color=SERIES[s],
-                    alpha=1.0 if cell.sharpe_p < ALPHA else 0.35,
+                    alpha=1.0 if cell.boot < ALPHA else 0.35,
                     linewidth=0,
                 )
         ax.axvline(0, color=INK, linewidth=0.8)
@@ -81,9 +81,11 @@ def sharpe_figure(
     axes[0].invert_yaxis()
     handles = []
     for s, sample in enumerate(samples):
-        c0 = table[(sample.key, keys[0], "ew")]
+        c0 = table[(sample.tag, keys[0], "ew")]
         label = f"{sample.label}, {_span(c0)}"
-        handles.append(Rectangle((0, 0), 1, 1, color=SERIES[s], label=f"{label}, p < {ALPHA:g}"))
+        handles.append(
+            Rectangle((0, 0), 1, 1, color=SERIES[s], label=f"{label}, bootstrap p < {ALPHA:g}")
+        )
         handles.append(
             Rectangle((0, 0), 1, 1, color=SERIES[s], alpha=0.35, label=f"{label}, not significant")
         )
@@ -119,7 +121,7 @@ def turnover_figure(
     """Monthly turnover of each rule on a log scale, one panel per dataset."""
     rules = [r for r in bt.RULES if r not in ("vw", "bl")]
     table = {(c.sample, c.dataset, c.rule): c for c in cells}
-    keys = [k for k in datasets if (samples[0].key, k, "ew") in table]
+    keys = [k for k in datasets if (samples[0].tag, k, "ew") in table]
     fig, axes = plt.subplots(1, len(keys), figsize=(11, 3.9), sharey=True, facecolor=SURFACE)
     axes = [axes] if len(keys) == 1 else list(axes)
     height = 0.8 / len(samples)
@@ -130,7 +132,7 @@ def turnover_figure(
                 y = i + (s - (len(samples) - 1) / 2) * height
                 ax.barh(
                     y,
-                    table[(sample.key, key, rule)].turnover - 1e-3,
+                    table[(sample.tag, key, rule)].turnover - 1e-3,
                     height=height * 0.88,
                     color=SERIES[s],
                     linewidth=0,
@@ -149,7 +151,7 @@ def turnover_figure(
     axes[0].invert_yaxis()
     handles = []
     for s, sample in enumerate(samples):
-        c0 = table[(sample.key, keys[0], "ew")]
+        c0 = table[(sample.tag, keys[0], "ew")]
         handles.append(
             Rectangle(
                 (0, 0),

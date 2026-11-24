@@ -48,10 +48,12 @@ def return_loss(benchmark_net: Array, strategy_net: Array) -> float:
 
 @dataclass(frozen=True)
 class TestResult:
-    """A z statistic and the one-sided p-value ``1 - Phi(|z|)``.
+    """A test statistic and its two-sided p-value.
 
-    Every p-value in the paper's tables is at most 0.50, so they are read here as one-sided
-    in the direction of the observed difference.
+    For the two tests in this module the p-value is ``2 (1 - Phi(|z|))``. No p-value in the
+    paper's tables is above 0.50, so the paper's own figures look one-sided in the direction
+    of the observed difference. Half of the two-sided value is the comparable number, and
+    ``one_sided`` returns it.
     """
 
     __test__ = False  # not a pytest class
@@ -59,9 +61,14 @@ class TestResult:
     statistic: float
     p_value: float
 
+    @property
+    def one_sided(self) -> float:
+        """P-value against the alternative in the direction of the observed difference."""
+        return 0.5 * self.p_value
 
-def _one_sided(z: float) -> TestResult:
-    return TestResult(statistic=z, p_value=0.5 * math.erfc(abs(z) / math.sqrt(2.0)))
+
+def _two_sided(z: float) -> TestResult:
+    return TestResult(statistic=z, p_value=math.erfc(abs(z) / math.sqrt(2.0)))
 
 
 def sharpe_difference_test(r_i: Array, r_n: Array) -> TestResult:
@@ -87,8 +94,8 @@ def sharpe_difference_test(r_i: Array, r_n: Array) -> TestResult:
     ) / t
     num = s_n * m_i - s_i * m_n
     if theta <= 0.0 or num == 0.0:
-        return TestResult(statistic=0.0, p_value=0.5)
-    return _one_sided(num / math.sqrt(theta))
+        return TestResult(statistic=0.0, p_value=1.0)
+    return _two_sided(num / math.sqrt(theta))
 
 
 def ceq_difference_test(r_i: Array, r_n: Array, gamma: float = 1.0) -> TestResult:
@@ -114,5 +121,5 @@ def ceq_difference_test(r_i: Array, r_n: Array, gamma: float = 1.0) -> TestResul
     diff = (float(r_i.mean()) - 0.5 * gamma * v_i) - (float(r_n.mean()) - 0.5 * gamma * v_n)
     var = float(grad @ theta @ grad) / t
     if var <= 0.0 or diff == 0.0:
-        return TestResult(statistic=0.0, p_value=0.5)
-    return _one_sided(diff / math.sqrt(var))
+        return TestResult(statistic=0.0, p_value=1.0)
+    return _two_sided(diff / math.sqrt(var))

@@ -13,6 +13,7 @@ DATASETS = ("industry", "mkt_smb_hml", "ff1", "ff4")
 SAMPLE_START = 196307
 SAMPLE_END = 200411
 WINDOW = 120
+SAMPLE_MONTHS = 497
 
 Row = tuple[float | None, float | None, float | None, float | None]
 

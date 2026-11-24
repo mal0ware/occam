@@ -76,7 +76,8 @@ def test_sharpe_test_matches_footnote_16() -> None:
     )
     got = met.sharpe_difference_test(a, b)
     assert np.isclose(got.statistic, expected)
-    assert np.isclose(got.p_value, 0.5 * math.erfc(abs(expected) / math.sqrt(2)))
+    assert np.isclose(got.p_value, math.erfc(abs(expected) / math.sqrt(2)))  # two-sided
+    assert np.isclose(got.one_sided, 0.5 * got.p_value)
 
 
 def test_sharpe_test_is_antisymmetric_and_null_on_identical_series() -> None:
@@ -87,7 +88,7 @@ def test_sharpe_test_is_antisymmetric_and_null_on_identical_series() -> None:
     assert np.isclose(ab.statistic, -ba.statistic)
     assert np.isclose(ab.p_value, ba.p_value)
     same = met.sharpe_difference_test(a, a.copy())
-    assert same.statistic == 0.0 and same.p_value == 0.5
+    assert same.statistic == 0.0 and same.p_value == 1.0
 
 
 def test_sharpe_test_ignores_leverage() -> None:
@@ -137,3 +138,14 @@ def test_both_tests_have_unit_variance_under_the_null() -> None:
         assert abs(z.mean()) < 0.06
         assert abs(z.std() - 1.0) < 0.05
         assert abs((np.abs(z) > 1.96).mean() - 0.05) < 0.015
+
+
+def test_two_sided_p_value_rejects_five_percent_of_true_nulls() -> None:
+    # The p-value itself, not the statistic: 3000 draws put the standard error near 0.004.
+    rng = np.random.default_rng(6)
+    chol = np.linalg.cholesky(np.array([[1.0, 0.5], [0.5, 1.0]]))
+    p = []
+    for _ in range(3000):
+        x = 0.01 + 0.05 * rng.standard_normal((360, 2)) @ chol.T
+        p.append(met.sharpe_difference_test(x[:, 0], x[:, 1]).p_value)
+    assert abs((np.array(p) < 0.05).mean() - 0.05) < 0.013

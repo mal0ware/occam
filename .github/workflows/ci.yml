@@ -16,13 +16,20 @@ jobs:
       - run: uv sync --locked
       - run: uv run ruff check
       - run: uv run mypy src
-      # The data step may fail if the French library is unreachable; tests that need the
-      # files skip themselves, and the smoke run is skipped with them.
+      # The French library is sometimes unreachable, so a failed download does not fail the
+      # build. It is reported as a warning on the run, and the tests against the paper are
+      # then skipped with a notice. When the download works, a missing file fails the tests.
       - name: fetch data
         id: fetch
         continue-on-error: true
         run: uv run python scripts/fetch_data.py
-      - run: uv run pytest
+      - name: warn when the data could not be fetched
+        if: steps.fetch.outcome != 'success'
+        run: echo "::warning title=No data::The French library download failed. Tests against the paper and the smoke run were skipped."
+      - name: tests
+        run: uv run pytest
+        env:
+          OCCAM_REQUIRE_DATA: ${{ steps.fetch.outcome == 'success' && '1' || '0' }}
       - name: smoke run of reproduce
         if: steps.fetch.outcome == 'success'
         run: uv run python scripts/reproduce.py --fast
